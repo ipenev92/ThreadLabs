@@ -17,6 +17,6 @@ public class Button extends JButton {
         this.setText(text);
         this.setFont(new Font("Arial", Font.BOLD, 30));
         this.setBackground(Color.CYAN);
-        this.setPreferredSize(new Dimension(150, 150));
+        this.setPreferredSize(new Dimension(80, 80));
     }
 }

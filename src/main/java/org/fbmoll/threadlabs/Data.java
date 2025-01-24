@@ -10,9 +10,9 @@ import javax.swing.table.DefaultTableModel;
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Data {
-    final JTable table;
-    final JScrollPane scrollPane;
     final DefaultTableModel model;
+    final JScrollPane scrollPane;
+    final JTable table;
 
     public Data() {
         String[] columnNames = {"Header", "Data"};
@@ -22,14 +22,14 @@ public class Data {
                 {"col3", "c"}
         };
 
-        model = new DefaultTableModel(tableData, columnNames) {
+        this.model = new DefaultTableModel(tableData, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
-        table = new JTable(model);
-        scrollPane = new JScrollPane(table);
+        this.table = new JTable(model);
+        this.scrollPane = new JScrollPane(table);
     }
 }

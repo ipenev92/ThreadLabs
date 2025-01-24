@@ -13,7 +13,7 @@ public class DataPanel extends JPanel {
     final Data data;
 
     public DataPanel() {
-        data = new Data();
+        this.data = new Data();
         this.setLayout(new BorderLayout());
         this.add(data.getScrollPane(), BorderLayout.CENTER);
     }

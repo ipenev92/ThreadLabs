@@ -14,10 +14,9 @@ public class ControlPanel extends JPanel {
     final Button buttonStop;
 
     public ControlPanel() {
-        buttonPlay = new Button("Play");
-        buttonStop = new Button("Stop");
+        this.buttonPlay = new Button("Play");
+        this.buttonStop = new Button("Stop");
 
         this.setLayout(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
     }
 }

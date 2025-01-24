@@ -9,42 +9,43 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Model {
+    ConfigurationPropertiesDTO properties;
+    Controller controller;
     Consumer consumer;
     Producer producer;
-    Resources resources;
-
     Thread consumerThread;
     Thread producerThread;
+    Resources resources;
 
-    public Model() {
-        resources = new Resources();
-        producer = new Producer(this, "Producer");
-        consumer = new Consumer(this, "Consumer");
+    public Model(Controller controller) {
+        this.controller = controller;
+        this.resources = new Resources(0, 100, 100);
+        this.consumer = new Consumer(this, resources, "Consumer");
+        this.producer = new Producer(this, resources, "Producer");
+
+        this.properties = new ConfigurationPropertiesDTO(consumer, producer, resources);
     }
 
     public void play() {
-        if (consumerThread == null && producerThread == null) {
-            consumerThread = new Thread(consumer);
-            producerThread = new Thread(producer);
+        if (this.consumer.getState() != State.RUNNING && this.producer.getState() != State.RUNNING) {
+            this.consumerThread = new Thread(this.consumer);
+            this.producerThread = new Thread(this.producer);
 
-            consumerThread.start();
-            producerThread.start();
+            this.consumer.setState(State.RUNNING);
+            this.producer.setState(State.RUNNING);
 
-            consumer.setState(State.RUNNING);
-            producer.setState(State.RUNNING);
+            this.consumerThread.start();
+            this.producerThread.start();
         }
     }
 
     public void stop() {
-        if (producerThread != null && consumerThread != null) {
-            producerThread.interrupt();
-            consumerThread.interrupt();
+        if (this.consumer.getState() == State.RUNNING && this.producer.getState() == State.RUNNING) {
+            this.consumer.setState(State.STOPPED);
+            this.producer.setState(State.STOPPED);
 
-            producer.setState(State.STOPPED);
-            consumer.setState(State.STOPPED);
+            this.consumerThread.interrupt();
+            this.producerThread.interrupt();
         }
-
-        producerThread = null;
-        consumerThread = null;
     }
 }

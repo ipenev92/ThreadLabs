@@ -1,11 +1,16 @@
 package org.fbmoll.threadlabs;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Controller {
-    Model model;
+    final Model model;
+    final View view;
 
     public Controller() {
-        model = new Model();
-        new View(this);
+        this.model = new Model(this);
+        this.view = new View(this);
     }
 
     public void play() {

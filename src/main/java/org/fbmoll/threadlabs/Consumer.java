@@ -9,23 +9,25 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Consumer implements Runnable {
-    final String name;
     final Model model;
     State state;
+    final String name;
+    final Resources resources;
 
-    public Consumer(Model model, String name) {
-        this.name = name;
+    public Consumer(Model model, Resources resources, String name) {
         this.model = model;
+        this.name = name;
+        this.resources = resources;
     }
 
     private void consume() {
-        model.getResources().removeResource();
+        this.resources.removeResource();
     }
 
     @Override
     public void run() {
         for (int i = 0; i < 1000; i++) {
-            consume();
+            this.consume();
 
             try {
                 Thread.sleep(1);
