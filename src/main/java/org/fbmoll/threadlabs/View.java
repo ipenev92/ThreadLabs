@@ -46,18 +46,8 @@ public class View extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == this.controlPanel.getButtonPlay()) {
-            this.configuration = new ConfigurationDTO(
-                    this.controller.getModel(),
-                    Integer.parseInt(layoutManagerHelper.getConsumerCountField().getText()),
-                    Integer.parseInt(layoutManagerHelper.getProducerCountField().getText()),
-                    Integer.parseInt(layoutManagerHelper.getResourceTypesCountField().getText()),
-                    Integer.parseInt(layoutManagerHelper.getMinResourcesCountField().getText()),
-                    Integer.parseInt(layoutManagerHelper.getMaxResourcesCountField().getText()),
-                    Integer.parseInt(layoutManagerHelper.getMinCreationDelayField().getText()),
-                    Integer.parseInt(layoutManagerHelper.getMaxCreationDelayField().getText()),
-                    layoutManagerHelper.getFixedDelayCheckbox().isSelected(),
-                    Integer.parseInt(layoutManagerHelper.getFixedDelayField().getText())*1000
-            );
+            Object tewt = this.layoutManagerHelper.getConfigurationTable().getModel().getValueAt(0,1);
+            System.out.println(tewt);
             this.controller.play(this.configuration);
             this.layoutManagerHelper.setConfiguration(this.configuration);
             this.layoutManagerHelper.updateTables();

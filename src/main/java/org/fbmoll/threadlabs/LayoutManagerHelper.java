@@ -7,8 +7,8 @@ import lombok.experimental.FieldDefaults;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -21,34 +21,23 @@ public class LayoutManagerHelper {
     final ControlPanel controlPanel;
     ConfigurationDTO configuration;
 
-    final JPanel configurationPanel;
-    final JPanel statisticsPanel;
+    JTable configurationTable;
+    JTable statisticsTable;
     JScrollPane consumerTable;
     JScrollPane producerTable;
     JScrollPane resourcesTable;
 
-    final JTextField consumerCountField = new JTextField("5", 4);
-    final JTextField producerCountField = new JTextField("5", 4);
-    final JTextField resourceTypesCountField = new JTextField("5", 4);
-    final JTextField minResourcesCountField = new JTextField("0", 4);
-    final JTextField maxResourcesCountField = new JTextField("1000", 4);
-    final JTextField minCreationDelayField = new JTextField("2", 2);
-    final JTextField maxCreationDelayField = new JTextField("5", 2);
-    final JCheckBox fixedDelayCheckbox = new JCheckBox("Fixed Delay?");
-    final JTextField fixedDelayField = new JTextField("0", 4);
-
     public LayoutManagerHelper(View view, ControlPanel controlPanel) {
         this.view = view;
         this.controlPanel = controlPanel;
-        this.configuration = createEmptyConfiguration();
+        this.configuration = ConfigurationDTO.empty();
 
-        this.configurationPanel = this.createConfigurationPanel();
-        this.statisticsPanel = this.createStatisticsPanel();
+        this.configurationTable = createConfigurationTable();
+        this.statisticsTable = createStatisticsTable();
         this.consumerTable = createTable("Consumer Data");
         this.producerTable = createTable("Producer Data");
         this.resourcesTable = createTable("Resources Data");
 
-        this.fixedDelayField.setEnabled(false);
         this.configureLayout();
     }
 
@@ -72,11 +61,11 @@ public class LayoutManagerHelper {
         leftC.gridy = 0;
         leftC.weightx = 0.3;
         leftC.weighty = 0.8;
-        leftPanel.add(this.configurationPanel, leftC);
+        leftPanel.add(new JScrollPane(this.configurationTable), leftC);
 
         leftC.gridx = 1;
         leftC.weightx = 0.7;
-        leftPanel.add(this.statisticsPanel, leftC);
+        leftPanel.add(new JScrollPane(this.statisticsTable), leftC);
 
         JPanel buttonPanel = new JPanel(new GridBagLayout());
         leftC.gridx = 0;
@@ -110,114 +99,101 @@ public class LayoutManagerHelper {
         rightC.gridy = 0;
         rightC.weightx = 0.33;
         rightC.weighty = 1.0;
-        JScrollPane resourcesScrollPane = new JScrollPane(this.resourcesTable);
-        rightPanel.add(resourcesScrollPane, rightC);
+        rightPanel.add(this.resourcesTable, rightC);
 
         rightC.gridx = 1;
-        JScrollPane producerScrollPane = new JScrollPane(this.producerTable);
-        rightPanel.add(producerScrollPane, rightC);
+        rightPanel.add(this.producerTable, rightC);
 
         rightC.gridx = 2;
-        JScrollPane consumerScrollPane = new JScrollPane(this.consumerTable);
-        rightPanel.add(consumerScrollPane, rightC);
+        rightPanel.add(this.consumerTable, rightC);
     }
 
-    private JPanel createConfigurationPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
+    private JTable createConfigurationTable() {
+        String[] columnNames = {"Parameter", "Value"};
+        Object[][] data = {
+                {"**ResourceType Settings**", ""},
+                {"Resource Types", "5"},
+                {"Min Resources", "0"},
+                {"Max Resources", "1000"},
+
+                {"**Consumer Settings**", ""},
+                {"Consumers", "5"},
+
+                {"**Producer Settings**", ""},
+                {"Producers", "5"},
+
+                {"**Delays**", ""},
+                {"Min Start Delay (s)", "2"},
+                {"Max Start Delay (s)", "5"},
+                {"Min Consumer Delay (s)", "2"},
+                {"Max Consumer Delay (s)", "5"},
+                {"Min Producer Delay (s)", "2"},
+                {"Max Producer Delay (s)", "5"}
+        };
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Make the second column (Value) editable, but not headers
+                return column == 1 && !getValueAt(row, 0).toString().startsWith("**");
+            }
+        };
+
+        JTable table = createStyledTable(model, "Configuration");
+
+        // Make the header column non-editable and bold
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(200);
+        columnModel.getColumn(1).setPreferredWidth(100);
+
+        return table;
+    }
+
+    private JTable createStatisticsTable() {
+        String[] columnNames = {"Statistic", "Value"};
+        Object[][] data = {
+                {"Total Resources", "0"},
+                {"Consumed Resources", "0"},
+                {"Produced Resources", "0"}
+        };
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        return createStyledTable(model, "Statistics");
+    }
+
+    private JScrollPane createTable(String title) {
+        String[] columnNames = Objects.equals(title, "Resources Data") ? new String[]{"", ""} : new String[]{"", "", ""};
+        DefaultTableModel model = new DefaultTableModel(null, columnNames);
+        JTable table = createStyledTable(model, title);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.BLACK, 2),
-                "Configuration",
+                title,
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
                 new Font("Arial", Font.BOLD, 16),
                 Color.BLACK
         ));
-        GridBagConstraints configC = new GridBagConstraints();
-        configC.insets = new Insets(5, 5, 5, 5);
-        configC.fill = GridBagConstraints.HORIZONTAL;
 
-        configC.gridx = 0;
-        configC.gridy = 0;
-        panel.add(new JLabel("Consumers:"), configC);
-        configC.gridx = 1;
-        panel.add(consumerCountField, configC);
-
-        configC.gridx = 0;
-        configC.gridy = 1;
-        panel.add(new JLabel("Producers:"), configC);
-        configC.gridx = 1;
-        panel.add(producerCountField, configC);
-
-        configC.gridx = 0;
-        configC.gridy = 2;
-        panel.add(new JLabel("Resource Types:"), configC);
-        configC.gridx = 1;
-        panel.add(resourceTypesCountField, configC);
-
-        configC.gridx = 0;
-        configC.gridy = 3;
-        panel.add(new JLabel("Min Resources:"), configC);
-        configC.gridx = 1;
-        panel.add(minResourcesCountField, configC);
-
-        configC.gridx = 0;
-        configC.gridy = 4;
-        panel.add(new JLabel("Max Resources:"), configC);
-        configC.gridx = 1;
-        panel.add(maxResourcesCountField, configC);
-
-        // **Creation Delay (Single Row)**
-        configC.gridx = 0;
-        configC.gridy = 5;
-        panel.add(new JLabel("Creation Delay (s):"), configC);
-
-        JPanel delayPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0)); // Compact layout
-        delayPanel.add(minCreationDelayField);
-        delayPanel.add(new JLabel("-"));
-        delayPanel.add(maxCreationDelayField);
-
-        configC.gridx = 1;
-        panel.add(delayPanel, configC);
-
-        // **Fixed Delay Checkbox (Separate Row)**
-        this.fixedDelayCheckbox.setSelected(false);
-        this.fixedDelayCheckbox.addActionListener(e -> {
-            boolean isFixedDelay = this.fixedDelayCheckbox.isSelected();
-
-            this.fixedDelayField.setEnabled(isFixedDelay);
-            this.minCreationDelayField.setEnabled(!isFixedDelay);
-            this.maxCreationDelayField.setEnabled(!isFixedDelay);
-        });
-
-        // **Fixed Delay Field (Separate Row)**
-        configC.gridx = 0;
-        configC.gridy = 7;
-        configC.gridwidth = 1;
-        panel.add(new JLabel("Fixed Delay:"), configC);
-
-        configC.gridx = 0;
-        configC.gridy = 6;
-        configC.gridwidth = 2; // Span both columns
-        panel.add(fixedDelayCheckbox, configC);
-
-        configC.gridx = 1;
-        configC.gridy = 7;
-        panel.add(this.fixedDelayField, configC);
-
-        return panel;
+        return scrollPane;
     }
 
-    private JPanel createStatisticsPanel() {
-        JPanel panel = new JPanel();
-        panel.setBorder(BorderFactory.createTitledBorder(
+    private JTable createStyledTable(DefaultTableModel model, String title) {
+        JTable table = new JTable(model);
+        table.setPreferredScrollableViewportSize(new Dimension(250, 150));
+        table.setRowHeight(20);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.BLACK, 2),
-                "Statistics",
+                title,
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
                 new Font("Arial", Font.BOLD, 16),
                 Color.BLACK
         ));
-        return panel;
+
+        return table;
     }
 
     public void updateTables() {
@@ -235,7 +211,7 @@ public class LayoutManagerHelper {
         model.setRowCount(0);
         for (Consumer consumer : list) {
             if (consumer.getState() == State.RUNNING) {
-                model.addRow(new Object[] {
+                model.addRow(new Object[]{
                         consumer.getName(), consumer.getQuantityConsumed(), consumer.getResourceType().getName()
                 });
             }
@@ -249,7 +225,7 @@ public class LayoutManagerHelper {
         model.setRowCount(0);
         for (Producer producer : list) {
             if (producer.getState() == State.RUNNING) {
-                model.addRow(new Object[] {
+                model.addRow(new Object[]{
                         producer.getName(), producer.getQuantityProduced(), producer.getResourceType().getName()
                 });
             }
@@ -264,52 +240,11 @@ public class LayoutManagerHelper {
         ArrayList<String> addedResource = new ArrayList<>();
         for (ResourceType resource : list) {
             if (!addedResource.contains(resource.getName())) {
-                model.addRow(new Object[] {
+                model.addRow(new Object[]{
                         resource.getName(), resource.getQuantity()
                 });
                 addedResource.add(resource.getName());
             }
         }
-    }
-
-    private JScrollPane createTable(String title) {
-        String[] columnNames = Objects.equals(title, "Resources Data") ? new String[]{"", ""} : new String[]{"", "", ""};
-        Object[][] data = {};
-        DefaultTableModel model = new DefaultTableModel(data, columnNames);
-        JTable table = new JTable(model);
-        table.setTableHeader(null);
-
-        table.setPreferredScrollableViewportSize(new Dimension(200, 120));
-
-        table.getColumnModel().getColumn(0).setPreferredWidth(80);
-        table.getColumnModel().getColumn(1).setPreferredWidth(40);
-        table.setRowHeight(20);
-
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
-        table.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setViewportBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        scrollPane.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.BLACK, 2),
-                title,
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                new Font("Arial", Font.BOLD, 16),
-                Color.BLACK
-        ));
-
-        UIManager.put("ScrollPane.border", BorderFactory.createEmptyBorder());
-        return scrollPane;
-    }
-
-    private ConfigurationDTO createEmptyConfiguration() {
-        return new ConfigurationDTO(this.view.getController().getModel(), 5, 5,
-                5, 0, 1000, 2, 5,
-                false,0);
     }
 }

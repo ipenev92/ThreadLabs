@@ -12,10 +12,10 @@ import java.util.Random;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConfigurationDTO {
-    final String[] RESOURCES = new String[] {
+    final String[] resources = new String[] {
             "Hamburger", "Pizza", "Pasta", "Sushi", "Tacos"
     };
-    String[] NAMES = new String[] {
+    String[] names = new String[] {
             "Anna", "Liam", "Emma", "Noah", "Mia", "Eve", "Leo", "Ivy", "Zoe", "Max",
             "Ella", "Lucas", "Sophia", "Mason", "Aria", "Jack", "Luna", "Ethan", "Ava", "James",
             "Elena", "Oliver", "Isla", "Henry", "Chloe", "Oscar", "Grace", "Thea", "Finn", "Ellie",
@@ -23,33 +23,37 @@ public class ConfigurationDTO {
             "Jude", "Scarlett", "Owen", "Violet", "Ryan", "Layla", "Zane", "Clara", "Reid", "Aurora"
     };
     final Model model;
+    final int resourceTypesCount;
+    final int resourcesMin;
+    final int resourcesMax;
     final int consumerCount;
     final int producerCount;
-    final int resourceTypesCount;
-    final int minResourcesCount;
-    final int maxResourcesCount;
-    final int minCreationDelay;
-    final int maxCreationDelay;
-    final boolean randomDelay;
-    final int creationDelay;
+    final int startDelayMin;
+    final int startDelayMax;
+    final int consumerDelayMin;
+    final int consumerDelayMax;
+    final int producerDelayMin;
+    final int producerDelayMax;
 
     final ArrayList<Consumer> consumers;
     final ArrayList<Producer> producers;
     final ArrayList<ResourceType> resourceTypes;
 
-    public ConfigurationDTO(Model model, int consumerCount, int producerCount, int resourceTypesCount,
-                            int minResourcesCount, int maxResourcesCount, int minCreationDelay, int maxCreationDelay,
-                            boolean randomDelay, int creationDelay) {
+    public ConfigurationDTO(Model model, int resourceTypesCount, int resourcesMin, int resourcesMax, int consumerCount,
+                            int producerCount, int startDelayMin, int startDelayMax, int consumerDelayMin,
+                            int consumerDelayMax, int producerDelayMin, int producerDelayMax) {
         this.model = model;
+        this.resourceTypesCount = resourceTypesCount;
+        this.resourcesMin = resourcesMin;
+        this.resourcesMax = resourcesMax;
         this.consumerCount = consumerCount;
         this.producerCount = producerCount;
-        this.resourceTypesCount = resourceTypesCount;
-        this.minResourcesCount = minResourcesCount;
-        this.maxResourcesCount = maxResourcesCount;
-        this.minCreationDelay = minCreationDelay;
-        this.maxCreationDelay = maxCreationDelay;
-        this.randomDelay = randomDelay;
-        this.creationDelay = creationDelay;
+        this.startDelayMin = startDelayMin;
+        this.startDelayMax = startDelayMax;
+        this.consumerDelayMin = consumerDelayMin;
+        this.consumerDelayMax = consumerDelayMax;
+        this.producerDelayMin = producerDelayMin;
+        this.producerDelayMax = producerDelayMax;
 
         this.consumers = new ArrayList<>();
         this.producers = new ArrayList<>();
@@ -60,29 +64,35 @@ public class ConfigurationDTO {
         this.createProducers();
     }
 
+    public static ConfigurationDTO empty() {
+        return new ConfigurationDTO(null, 0,0,0,0,
+                0,0,0,0,0,0,
+                0);
+    }
+
     private void createResources() {
         for (int i = 0; i < this.resourceTypesCount; i++) {
-            String name = this.RESOURCES[generateNumber(this.RESOURCES.length)];
-            this.resourceTypes.add(new ResourceType(name, this.minResourcesCount, this.maxResourcesCount));
+            String name = this.resources[generateNumber(this.resources.length)];
+            this.resourceTypes.add(new ResourceType(name, this.resourcesMin, this.resourcesMax));
         }
     }
 
     private void createConsumers() {
         for (int i = 0; i < this.consumerCount; i++) {
-            int number = generateNumber(this.NAMES.length);
-            String name = this.NAMES[number];
+            int number = generateNumber(this.names.length);
+            String name = this.names[number];
             ResourceType resource = this.resourceTypes.get(generateNumber(resourceTypes.size()));
-            this.NAMES = removeName(number);
+            this.names = removeName(number);
             this.consumers.add(new Consumer(this.model, name, resource));
         }
     }
 
     private void createProducers() {
         for (int i = 0; i < this.producerCount; i++) {
-            int number = generateNumber(this.NAMES.length);
-            String name = this.NAMES[number];
+            int number = generateNumber(this.names.length);
+            String name = this.names[number];
             ResourceType resource = this.resourceTypes.get(generateNumber(resourceTypes.size()));
-            this.NAMES = removeName(number);
+            this.names = removeName(number);
             this.producers.add(new Producer(this.model, name, resource));
         }
     }
@@ -93,16 +103,16 @@ public class ConfigurationDTO {
     }
 
     private String[] removeName(int indexToRemove) {
-        if (indexToRemove < 0 || indexToRemove >= this.NAMES.length) {
+        if (indexToRemove < 0 || indexToRemove >= this.names.length) {
             throw new IllegalArgumentException("Index out of bounds");
         }
 
-        String[] result = new String[this.NAMES.length - 1];
+        String[] result = new String[this.names.length - 1];
         int currentIndex = 0;
 
-        for (int i = 0; i < this.NAMES.length; i++) {
+        for (int i = 0; i < this.names.length; i++) {
             if (i != indexToRemove) {
-                result[currentIndex++] = this.NAMES[i];
+                result[currentIndex++] = this.names[i];
             }
         }
 

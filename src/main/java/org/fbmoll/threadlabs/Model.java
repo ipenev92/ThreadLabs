@@ -18,22 +18,29 @@ public class Model {
     final Object lock = new Object();
     ConfigurationDTO configuration;
     Controller controller;
+    Random random;
+    ScheduledExecutorService scheduler;
 
     public Model(Controller controller) {
         this.controller = controller;
+        this.random = new Random();
+        this.scheduler = Executors.newScheduledThreadPool(10);
     }
 
-    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
-
     public void play() {
+        int consumerDelay = getRandomDelay(this.configuration.getConsumerDelayMin(),
+                this.configuration.getConsumerDelayMax());
+        int producerDelay = getRandomDelay(this.configuration.getProducerDelayMin(),
+                this.configuration.getProducerDelayMax());
+        int currentDelay;
+
         synchronized (this.lock) {
             if (scheduler.isShutdown() || scheduler.isTerminated()) {
                 scheduler = Executors.newScheduledThreadPool(10);
             }
 
-            int delay = this.configuration.isRandomDelay() ? this.configuration.getCreationDelay() : getRandomDelay();
 
-            int currentDelay = 0;
+            currentDelay = 0;
             for (Consumer consumer : this.configuration.getConsumers()) {
                 int finalDelay = currentDelay;
                 consumer.setState(State.DELAYED);
@@ -43,7 +50,7 @@ public class Model {
                     consumer.getThread().start();
                 }, finalDelay, TimeUnit.MILLISECONDS);
 
-                currentDelay += delay;
+                currentDelay += consumerDelay;
             }
 
             currentDelay = 0;
@@ -56,7 +63,7 @@ public class Model {
                     producer.getThread().start();
                 }, finalDelay, TimeUnit.MILLISECONDS);
 
-                currentDelay += delay;
+                currentDelay += producerDelay;
             }
         }
     }
@@ -83,10 +90,7 @@ public class Model {
         this.controller.getView().getViewThread().join();
     }
 
-    private int getRandomDelay() {
-        Random random = new Random();
-        int min = this.configuration.getMinCreationDelay();
-        int max = this.configuration.getMaxCreationDelay();
-        return (random.nextInt((max - min) + 1) + min) * 1000;
+    private int getRandomDelay(int x, int y) {
+        return (this.random.nextInt((x - y) + 1) + y);
     }
 }
