@@ -6,24 +6,26 @@ import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Resources {
+public class ResourceType {
+    final String name;
     int quantity;
     final int maxQuantity;
     final int minQuantity;
 
-    public Resources(int max, int min, int quantity) {
+    public ResourceType(String name, int max, int min) {
+        this.name = name;
         this.maxQuantity = max;
         this.minQuantity = min;
-        this.quantity = quantity;
+        this.quantity = 0;
     }
 
-    public void addResource() {
+    public synchronized void addResource() {
         this.quantity++;
-        System.out.println(this.quantity);
+        notifyAll();
     }
 
-    public void removeResource() {
+    public synchronized void removeResource() {
         this.quantity--;
-        System.out.println(this.quantity);
+        notifyAll();
     }
 }

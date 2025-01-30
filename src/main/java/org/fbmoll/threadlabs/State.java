@@ -1,7 +1,8 @@
 package org.fbmoll.threadlabs;
 
 public enum State {
+    DELAYED,
     RUNNING,
     ENDED,
-    STOPPED
+    INTERRUPTED
 }

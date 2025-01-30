@@ -1,8 +1,10 @@
 package org.fbmoll.threadlabs;
 
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
+@Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Controller {
     final Model model;
@@ -13,11 +15,12 @@ public class Controller {
         this.view = new View(this);
     }
 
-    public void play() {
+    public void play(ConfigurationDTO configuration) {
+        this.model.setConfiguration(configuration);
         this.model.play();
     }
 
-    public void stop() {
+    public void stop() throws InterruptedException {
         this.model.stop();
     }
 }

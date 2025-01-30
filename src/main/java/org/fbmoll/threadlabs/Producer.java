@@ -12,28 +12,40 @@ public class Producer implements Runnable {
     final String name;
     final Model model;
     State state;
-    final Resources resources;
+    final ResourceType resourceType;
+    final Thread thread;
+    int quantityProduced;
 
-    public Producer(Model model, Resources resources, String name) {
+    public Producer(Model model, String name, ResourceType resourceType) {
         this.name = name;
         this.model = model;
-        this.resources = resources;
+        this.resourceType = resourceType;
+        this.thread = new Thread(this);
+        this.quantityProduced = 0;
     }
 
     private void produce() {
-        this.resources.addResource();
+        synchronized (resourceType) {
+            while (this.resourceType.getQuantity() == 1000) {
+                try {
+                    System.out.println(name + " is waiting for space...");
+                    resourceType.wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+
+            this.resourceType.addResource();
+            this.quantityProduced++;
+            System.out.println(name + " produced 1 resource. Total produced: " + this.quantityProduced);
+        }
     }
 
     @Override
     public void run() {
-        for (int i = 0; i < 1000; i++) {
+        while (this.state == State.RUNNING) {
             this.produce();
-
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
         }
 
         this.state = State.ENDED;
