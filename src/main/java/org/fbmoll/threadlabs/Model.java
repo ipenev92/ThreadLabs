@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,63 +22,51 @@ public class Model {
 
     public Model(Controller controller) {
         this.controller = controller;
-        this.random = new Random();
         this.scheduler = Executors.newScheduledThreadPool(10);
     }
 
     public void play() {
-        int consumerDelay = getRandomDelay(this.configuration.getConsumerDelayMin(),
-                this.configuration.getConsumerDelayMax());
-        int producerDelay = getRandomDelay(this.configuration.getProducerDelayMin(),
-                this.configuration.getProducerDelayMax());
-        int currentDelay;
-
         synchronized (this.lock) {
             if (scheduler.isShutdown() || scheduler.isTerminated()) {
                 scheduler = Executors.newScheduledThreadPool(10);
             }
 
-
-            currentDelay = 0;
+            System.out.println("Starting Consumers...");
             for (Consumer consumer : this.configuration.getConsumers()) {
-                int finalDelay = currentDelay;
-                consumer.setState(State.DELAYED);
-
+                consumer.setStatus(Status.DELAYED);
                 scheduler.schedule(() -> {
-                    consumer.setState(State.RUNNING);
+                    consumer.setStatus(Status.RUNNING);
                     consumer.getThread().start();
-                }, finalDelay, TimeUnit.MILLISECONDS);
-
-                currentDelay += consumerDelay;
+                    System.out.println("Consumer " + consumer.getId() + " started.");
+                }, consumer.getStartDelay(), TimeUnit.MILLISECONDS);
             }
 
-            currentDelay = 0;
+            System.out.println("Starting Producers...");
             for (Producer producer : this.configuration.getProducers()) {
-                int finalDelay = currentDelay;
-                producer.setState(State.DELAYED);
-
+                producer.setStatus(Status.DELAYED);
                 scheduler.schedule(() -> {
-                    producer.setState(State.RUNNING);
+                    producer.setStatus(Status.RUNNING);
                     producer.getThread().start();
-                }, finalDelay, TimeUnit.MILLISECONDS);
-
-                currentDelay += producerDelay;
+                    System.out.println("Producer " + producer.getId() + " started.");
+                }, producer.getStartDelay(), TimeUnit.MILLISECONDS);
             }
         }
     }
 
+
+
     public void stop() throws InterruptedException {
         for (Consumer consumer : this.configuration.getConsumers()) {
-            if (consumer.getState() == State.RUNNING) {
-                consumer.setState(State.INTERRUPTED);
+            if (consumer.getStatus() == Status.RUNNING) {
+                consumer.setStatus(Status.INTERRUPTED);
                 consumer.getThread().interrupt();
                 consumer.getThread().join();
             }
         }
 
         for (Producer producer : this.configuration.getProducers()) {
-            if (producer.getState() == State.RUNNING) {
-                producer.setState(State.INTERRUPTED);
+            if (producer.getStatus() == Status.RUNNING) {
+                producer.setStatus(Status.INTERRUPTED);
                 producer.getThread().interrupt();
                 producer.getThread().join();
             }
@@ -88,9 +75,5 @@ public class Model {
         scheduler.shutdownNow();
         this.controller.getView().getViewThread().interrupt();
         this.controller.getView().getViewThread().join();
-    }
-
-    private int getRandomDelay(int x, int y) {
-        return (this.random.nextInt((x - y) + 1) + y);
     }
 }

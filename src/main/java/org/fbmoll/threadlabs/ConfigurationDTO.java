@@ -12,16 +12,6 @@ import java.util.Random;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConfigurationDTO {
-    final String[] resources = new String[] {
-            "Hamburger", "Pizza", "Pasta", "Sushi", "Tacos"
-    };
-    String[] names = new String[] {
-            "Anna", "Liam", "Emma", "Noah", "Mia", "Eve", "Leo", "Ivy", "Zoe", "Max",
-            "Ella", "Lucas", "Sophia", "Mason", "Aria", "Jack", "Luna", "Ethan", "Ava", "James",
-            "Elena", "Oliver", "Isla", "Henry", "Chloe", "Oscar", "Grace", "Thea", "Finn", "Ellie",
-            "Hugo", "Lily", "Jacob", "Nora", "Caleb", "Ruby", "Leo", "Hazel", "Eli", "Stella",
-            "Jude", "Scarlett", "Owen", "Violet", "Ryan", "Layla", "Zane", "Clara", "Reid", "Aurora"
-    };
     final Model model;
     final int resourceTypesCount;
     final int resourcesMin;
@@ -34,14 +24,23 @@ public class ConfigurationDTO {
     final int consumerDelayMax;
     final int producerDelayMin;
     final int producerDelayMax;
+    final boolean useSynchronized;
+    final boolean useLimits;
+
+    int startDelay = 0;
+    int consumerDelay = 0;
+    int producerDelay = 0;
 
     final ArrayList<Consumer> consumers;
     final ArrayList<Producer> producers;
     final ArrayList<ResourceType> resourceTypes;
 
+    final Random random;
+
     public ConfigurationDTO(Model model, int resourceTypesCount, int resourcesMin, int resourcesMax, int consumerCount,
                             int producerCount, int startDelayMin, int startDelayMax, int consumerDelayMin,
-                            int consumerDelayMax, int producerDelayMin, int producerDelayMax) {
+                            int consumerDelayMax, int producerDelayMin, int producerDelayMax, boolean useSynchronized,
+                            boolean useLimits) {
         this.model = model;
         this.resourceTypesCount = resourceTypesCount;
         this.resourcesMin = resourcesMin;
@@ -54,6 +53,10 @@ public class ConfigurationDTO {
         this.consumerDelayMax = consumerDelayMax;
         this.producerDelayMin = producerDelayMin;
         this.producerDelayMax = producerDelayMax;
+        this.useSynchronized = useSynchronized;
+        this.useLimits = useLimits;
+
+        this.random = new Random();
 
         this.consumers = new ArrayList<>();
         this.producers = new ArrayList<>();
@@ -67,55 +70,39 @@ public class ConfigurationDTO {
     public static ConfigurationDTO empty() {
         return new ConfigurationDTO(null, 0,0,0,0,
                 0,0,0,0,0,0,
-                0);
+                0, true, true);
     }
 
     private void createResources() {
-        for (int i = 0; i < this.resourceTypesCount; i++) {
-            String name = this.resources[generateNumber(this.resources.length)];
-            this.resourceTypes.add(new ResourceType(name, this.resourcesMin, this.resourcesMax));
+        for (int i = 1; i <= this.resourceTypesCount; i++) {
+            this.resourceTypes.add(new ResourceType("R" + i, this.resourcesMax, this.resourcesMin,
+                    this.useLimits));
         }
     }
 
     private void createConsumers() {
-        for (int i = 0; i < this.consumerCount; i++) {
-            int number = generateNumber(this.names.length);
-            String name = this.names[number];
+        for (int i = 1; i <= this.consumerCount; i++) {
             ResourceType resource = this.resourceTypes.get(generateNumber(resourceTypes.size()));
-            this.names = removeName(number);
-            this.consumers.add(new Consumer(this.model, name, resource));
+            this.consumers.add(new Consumer(this.model, "C" + i, resource,
+                    generateRandom(this.startDelayMin, this.startDelayMax),
+                    generateRandom(this.consumerDelayMin, this.consumerDelayMax)));
         }
     }
 
     private void createProducers() {
-        for (int i = 0; i < this.producerCount; i++) {
-            int number = generateNumber(this.names.length);
-            String name = this.names[number];
+        for (int i = 1; i <= this.producerCount; i++) {
             ResourceType resource = this.resourceTypes.get(generateNumber(resourceTypes.size()));
-            this.names = removeName(number);
-            this.producers.add(new Producer(this.model, name, resource));
+            this.producers.add(new Producer(this.model, "P" + i, resource,
+                    generateRandom(this.startDelayMin, this.startDelayMax),
+                    generateRandom(this.producerDelayMin, this.producerDelayMax)));
         }
     }
 
     private int generateNumber(int listSize) {
-        Random random = new Random();
-        return random.nextInt(listSize);
+        return this.random.nextInt(listSize);
     }
 
-    private String[] removeName(int indexToRemove) {
-        if (indexToRemove < 0 || indexToRemove >= this.names.length) {
-            throw new IllegalArgumentException("Index out of bounds");
-        }
-
-        String[] result = new String[this.names.length - 1];
-        int currentIndex = 0;
-
-        for (int i = 0; i < this.names.length; i++) {
-            if (i != indexToRemove) {
-                result[currentIndex++] = this.names[i];
-            }
-        }
-
-        return result;
+    private int generateRandom(int x, int y) {
+        return this.random.nextInt(y - x + 1) + x;
     }
 }

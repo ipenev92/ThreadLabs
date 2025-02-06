@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumnModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -26,6 +26,9 @@ public class LayoutManagerHelper {
     JScrollPane consumerTable;
     JScrollPane producerTable;
     JScrollPane resourcesTable;
+
+    JCheckBox useSynchronizedCheckBox;
+    JCheckBox useLimitsCheckBox;
 
     public LayoutManagerHelper(View view, ControlPanel controlPanel) {
         this.view = view;
@@ -59,12 +62,12 @@ public class LayoutManagerHelper {
 
         leftC.gridx = 0;
         leftC.gridy = 0;
-        leftC.weightx = 0.3;
+        leftC.weightx = 0.5;
         leftC.weighty = 0.8;
         leftPanel.add(new JScrollPane(this.configurationTable), leftC);
 
         leftC.gridx = 1;
-        leftC.weightx = 0.7;
+        leftC.weightx = 0.5;
         leftPanel.add(new JScrollPane(this.statisticsTable), leftC);
 
         JPanel buttonPanel = new JPanel(new GridBagLayout());
@@ -94,76 +97,128 @@ public class LayoutManagerHelper {
         GridBagConstraints rightC = new GridBagConstraints();
         rightC.fill = GridBagConstraints.BOTH;
         rightC.insets = new Insets(5, 5, 5, 5);
-
         rightC.gridx = 0;
+        rightC.weightx = 1.0;
+        rightC.weighty = 0.33;
+
         rightC.gridy = 0;
-        rightC.weightx = 0.33;
-        rightC.weighty = 1.0;
         rightPanel.add(this.resourcesTable, rightC);
 
-        rightC.gridx = 1;
+        rightC.gridy = 1;
         rightPanel.add(this.producerTable, rightC);
 
-        rightC.gridx = 2;
+        rightC.gridy = 2;
         rightPanel.add(this.consumerTable, rightC);
     }
 
     private JTable createConfigurationTable() {
         String[] columnNames = {"Parameter", "Value"};
+
+        useSynchronizedCheckBox = new JCheckBox();
+        useSynchronizedCheckBox.setSelected(true);
+
+        useLimitsCheckBox = new JCheckBox();
+        useLimitsCheckBox.setSelected(true);
+
+        JTable table = getJTable(columnNames);
+
+        DefaultTableCellRenderer checkBoxRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus,
+                                                           int row, int column) {
+                if ((row == 15 || row == 16) && value instanceof JCheckBox cb) {
+                    cb.setHorizontalAlignment(SwingConstants.CENTER);
+                    if (isSelected) {
+                        cb.setBackground(table.getSelectionBackground());
+                        cb.setForeground(table.getSelectionForeground());
+                    } else {
+                        cb.setBackground(table.getBackground());
+                        cb.setForeground(table.getForeground());
+                    }
+                    return cb;
+                }
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            }
+        };
+
+        table.getColumnModel().getColumn(1).setCellRenderer(checkBoxRenderer);
+        table.getColumnModel().getColumn(1).setCellEditor(new CheckBoxCellEditor());
+
+        return table;
+    }
+
+    private JTable getJTable(String[] columnNames) {
         Object[][] data = {
                 {"**ResourceType Settings**", ""},
-                {"Resource Types", "5"},
+                {"Resource Types", "1"},
                 {"Min Resources", "0"},
                 {"Max Resources", "1000"},
 
                 {"**Consumer Settings**", ""},
-                {"Consumers", "5"},
+                {"Consumers", "2"},
 
                 {"**Producer Settings**", ""},
-                {"Producers", "5"},
+                {"Producers", "15"},
 
-                {"**Delays**", ""},
-                {"Min Start Delay (s)", "2"},
-                {"Max Start Delay (s)", "5"},
-                {"Min Consumer Delay (s)", "2"},
-                {"Max Consumer Delay (s)", "5"},
-                {"Min Producer Delay (s)", "2"},
-                {"Max Producer Delay (s)", "5"}
+                {"**Delays**"},
+                {"Min Start Delay (s)", "106"},
+                {"Max Start Delay (s)", "365"},
+                {"Min Consumer Delay (s)", "1"},
+                {"Max Consumer Delay (s)", "15"},
+                {"Min Producer Delay (s)", "1"},
+                {"Max Producer Delay (s)", "15"},
+
+                // Only last two rows have checkboxes (rows 15 and 16)
+                {"Utilize Synchronized", useSynchronizedCheckBox},
+                {"Utilize Min and Max Resources", useLimitsCheckBox}
         };
 
         DefaultTableModel model = new DefaultTableModel(data, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Make the second column (Value) editable, but not headers
-                return column == 1 && !getValueAt(row, 0).toString().startsWith("**");
+                // Allow editing only for the checkbox cells (assuming rows 15 and 16)
+                return column == 1 && (row == 15 || row == 16);
             }
         };
 
-        JTable table = createStyledTable(model, "Configuration");
-
-        // Make the header column non-editable and bold
-        TableColumnModel columnModel = table.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(200);
-        columnModel.getColumn(1).setPreferredWidth(100);
-
+        JTable table = new JTable(model);
+        table.setPreferredScrollableViewportSize(new Dimension(300, 200));
         return table;
     }
+
 
     private JTable createStatisticsTable() {
         String[] columnNames = {"Statistic", "Value"};
         Object[][] data = {
                 {"Total Resources", "0"},
-                {"Consumed Resources", "0"},
-                {"Produced Resources", "0"}
+                {"Total Producers", "0"},
+                {"Total Consumers", "0"},
+                {"Total Resource Quantity", "0"},
+                {"Active Threads", "0"},
+                {"Idle Threads", "0"}
         };
+
         DefaultTableModel model = new DefaultTableModel(data, columnNames);
-        return createStyledTable(model, "Statistics");
+        JTable table = createStyledTable(model, "Statistics");
+        centerTableCells(table);
+        table.setPreferredScrollableViewportSize(new Dimension(300, 200)); // ✅ Keep tables equal width
+
+        return table;
+    }
+
+    private void centerTableCells(JTable table) {
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
     }
 
     private JScrollPane createTable(String title) {
-        String[] columnNames = Objects.equals(title, "Resources Data") ? new String[]{"", ""} : new String[]{"", "", ""};
-        DefaultTableModel model = new DefaultTableModel(null, columnNames);
+        DefaultTableModel model = getDefaultTableModel(title);
         JTable table = createStyledTable(model, title);
+        centerTableCells(table);
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createTitledBorder(
@@ -174,8 +229,26 @@ public class LayoutManagerHelper {
                 new Font("Arial", Font.BOLD, 16),
                 Color.BLACK
         ));
-
         return scrollPane;
+    }
+
+    private static DefaultTableModel getDefaultTableModel(String title) {
+        String[] columnNames;
+        if (Objects.equals(title, "Resources Data")) {
+            columnNames = new String[] {
+                    "Resource ID", "Quantity", "Min Qtty", "Max Qtty", "Consumers", "Producers", "Overflow", "Underflow"
+            };
+        } else if (Objects.equals(title, "Producer Data")) {
+            columnNames = new String[] {
+                    "Producer ID", "Res. Bound", "Status", "Produced", "Start Delay", "Produce Delay"
+            };
+        } else {
+            columnNames = new String[] {
+                    "Consumer ID", "Res. Bound", "Status", "Consumed", "Start Delay", "Consume Delay"
+            };
+        }
+
+        return new DefaultTableModel(null, columnNames);
     }
 
     private JTable createStyledTable(DefaultTableModel model, String title) {
@@ -198,53 +271,137 @@ public class LayoutManagerHelper {
 
     public void updateTables() {
         SwingUtilities.invokeLater(() -> {
-            updateConsumer(this.consumerTable, this.configuration.getConsumers());
-            updateProducer(this.producerTable, this.configuration.getProducers());
-            updateResource(this.resourcesTable, this.configuration.getResourceTypes());
+            updateConsumer();
+            updateProducer();
+            updateResource();
+
+            updateStatistics();
         });
     }
 
-    public void updateConsumer(JScrollPane scrollPane, ArrayList<Consumer> list) {
-        JTable table = (JTable) scrollPane.getViewport().getView();
+    private void updateConsumer() {
+        JTable table = (JTable) this.consumerTable.getViewport().getView();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
         model.setRowCount(0);
-        for (Consumer consumer : list) {
-            if (consumer.getState() == State.RUNNING) {
+        for (Consumer consumer : this.configuration.getConsumers()) {
+            if (consumer.getStatus() != Status.DELAYED) {
                 model.addRow(new Object[]{
-                        consumer.getName(), consumer.getQuantityConsumed(), consumer.getResourceType().getName()
+                        consumer.getId(), consumer.getResourceType().getId(), consumer.getStatus(),
+                        consumer.getQuantityConsumed(), consumer.getStartDelay(), consumer.getConsumeDelay()
                 });
             }
         }
     }
 
-    public void updateProducer(JScrollPane scrollPane, ArrayList<Producer> list) {
-        JTable table = (JTable) scrollPane.getViewport().getView();
+    private void updateProducer() {
+        JTable table = (JTable) this.producerTable.getViewport().getView();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
         model.setRowCount(0);
-        for (Producer producer : list) {
-            if (producer.getState() == State.RUNNING) {
+        for (Producer producer : this.configuration.getProducers()) {
+            if (producer.getStatus() != Status.DELAYED) {
                 model.addRow(new Object[]{
-                        producer.getName(), producer.getQuantityProduced(), producer.getResourceType().getName()
+                        producer.getId(), producer.getResourceType().getId(), producer.getStatus(),
+                        producer.getQuantityProduced(), producer.getStartDelay(), producer.getProduceDelay()
                 });
             }
         }
     }
 
-    public void updateResource(JScrollPane scrollPane, ArrayList<ResourceType> list) {
-        JTable table = (JTable) scrollPane.getViewport().getView();
+    private void updateResource() {
+        JTable table = (JTable) this.resourcesTable.getViewport().getView();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
         model.setRowCount(0);
         ArrayList<String> addedResource = new ArrayList<>();
-        for (ResourceType resource : list) {
-            if (!addedResource.contains(resource.getName())) {
+        for (ResourceType resource : this.configuration.getResourceTypes()) {
+            if (!addedResource.contains(resource.getId())) {
                 model.addRow(new Object[]{
-                        resource.getName(), resource.getQuantity()
+                        resource.getId(), resource.getQuantity(), resource.getMinQuantity(),
+                        resource.getMaxQuantity(), countConsumers(resource), countProducers(resource),
+                        resource.getOverflow(), resource.getUnderflow()
                 });
-                addedResource.add(resource.getName());
+                addedResource.add(resource.getId());
             }
         }
+    }
+
+    private int countConsumers(ResourceType resource) {
+        int consumers = 0;
+        for (Consumer consumer : this.configuration.getConsumers()) {
+            if (consumer.getResourceType() == resource) {
+                consumers++;
+            }
+        }
+
+        return consumers;
+    }
+
+    private int countProducers(ResourceType resource) {
+        int consumers = 0;
+        for (Producer producer : this.configuration.getProducers()) {
+            if (producer.getResourceType() == resource) {
+                consumers++;
+            }
+        }
+
+        return consumers;
+    }
+
+    private void updateStatistics() {
+        SwingUtilities.invokeLater(() -> {
+            JTable table = statisticsTable;
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+            model.setValueAt(configuration.getResourceTypes().stream()
+                    .mapToInt(ResourceType::getQuantity).sum(), 0, 1); // Total Resources
+            model.setValueAt(configuration.getProducerCount(), 1, 1); // Total Producers
+            model.setValueAt(configuration.getConsumerCount(), 2, 1); // Total Consumers
+            model.setValueAt(getTotalResources(), 3, 1); // Total Resource Quantity
+            model.setValueAt(getActiveThreadsCount(), 4, 1); // Active Threads
+            model.setValueAt(getIdleThreadsCount(), 5, 1); // Idle Threads
+        });
+    }
+
+    private int getTotalResources() {
+        int resources = 0;
+        for (ResourceType resource : configuration.getResourceTypes()) {
+            resources += resource.getQuantity();
+        }
+
+        return resources;
+    }
+
+    private int getActiveThreadsCount() {
+        return (int) Thread.getAllStackTraces().keySet().stream()
+                .filter(Thread::isAlive)
+                .count();
+    }
+
+    private int getIdleThreadsCount() {
+        return (int) Thread.getAllStackTraces().keySet().stream()
+                .filter(t -> t.getState() == Thread.State.WAITING)
+                .count();
+    }
+
+    public void clearTables() {
+        System.out.println("Clearing tables...");
+
+        DefaultTableModel consumerModel = (DefaultTableModel) ((JTable) this.consumerTable.getViewport().getView()).getModel();
+        consumerModel.setRowCount(0);
+
+        DefaultTableModel producerModel = (DefaultTableModel) ((JTable) this.producerTable.getViewport().getView()).getModel();
+        producerModel.setRowCount(0);
+
+        DefaultTableModel resourceModel = (DefaultTableModel) ((JTable) this.resourcesTable.getViewport().getView()).getModel();
+        resourceModel.setRowCount(0);
+
+        DefaultTableModel statsModel = (DefaultTableModel) statisticsTable.getModel();
+        for (int i = 0; i < statsModel.getRowCount(); i++) {
+            statsModel.setValueAt(0, i, 1);
+        }
+
+        this.view.repaint();
     }
 }
