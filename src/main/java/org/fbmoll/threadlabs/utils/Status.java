@@ -1,4 +1,4 @@
-package org.fbmoll.threadlabs;
+package org.fbmoll.threadlabs.utils;
 
 public enum Status {
     DELAYED,

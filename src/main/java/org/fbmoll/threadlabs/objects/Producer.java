@@ -1,9 +1,10 @@
-package org.fbmoll.threadlabs;
+package org.fbmoll.threadlabs.objects;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.fbmoll.threadlabs.utils.Status;
 
 @Getter
 @Setter
@@ -30,28 +31,33 @@ public class Producer implements Runnable {
     }
 
     private void produce() {
-        synchronized (resourceType) {
-            while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
-                try {
-                    this.status = Status.IDLE; // 🔄 Set producer to IDLE when waiting
-                    System.out.println(id + " is IDLE (waiting to produce). Total produced: " + this.quantityProduced);
-
-                    // ✅ Attempt to trigger overflow
-                    this.resourceType.addResource();
-
-                    resourceType.wait(); // WAIT for consumer to consume resources
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
+        if (model.getConfiguration().isUseSynchronized()) {
+            synchronized (resourceType) {
+                while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
+                    try {
+                        this.status = Status.IDLE;
+                        this.resourceType.addResource();
+                        resourceType.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 }
+
+                this.status = Status.RUNNING;
+                this.resourceType.addResource();
+                this.quantityProduced++;
+                resourceType.notifyAll();
+            }
+        } else {
+            while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
+                this.status = Status.IDLE;
+                this.resourceType.addResource();
             }
 
-            // ✅ Always check after being notified
-            this.status = Status.RUNNING; // 🔄 Set back to RUNNING
+            this.status = Status.RUNNING;
             this.resourceType.addResource();
             this.quantityProduced++;
-            System.out.println(id + " PRODUCED 1 resource. Total produced: " + this.quantityProduced);
-            resourceType.notifyAll(); // Wake up waiting consumers and producers
         }
     }
 
@@ -59,7 +65,6 @@ public class Producer implements Runnable {
     @Override
     public void run() {
         try {
-            System.out.println(id + " Producer sleeping for startDelay: " + startDelay);
             Thread.sleep(startDelay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -67,7 +72,6 @@ public class Producer implements Runnable {
         }
 
         this.status = Status.RUNNING;
-        System.out.println(id + " Producer STARTED.");
 
         while (this.status == Status.RUNNING) {
             this.produce();
@@ -80,6 +84,5 @@ public class Producer implements Runnable {
         }
 
         this.status = Status.ENDED;
-        System.out.println(id + " Producer ENDED.");
     }
 }

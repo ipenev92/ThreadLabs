@@ -1,9 +1,11 @@
-package org.fbmoll.threadlabs;
+package org.fbmoll.threadlabs.objects;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.fbmoll.threadlabs.dto.ConfigurationDTO;
+import org.fbmoll.threadlabs.utils.Status;
 
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -14,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Model {
-    final Object lock = new Object();
     ConfigurationDTO configuration;
     Controller controller;
     Random random;
@@ -26,34 +27,26 @@ public class Model {
     }
 
     public void play() {
-        synchronized (this.lock) {
-            if (scheduler.isShutdown() || scheduler.isTerminated()) {
-                scheduler = Executors.newScheduledThreadPool(10);
-            }
+        if (scheduler.isShutdown() || scheduler.isTerminated()) {
+            scheduler = Executors.newScheduledThreadPool(10);
+        }
 
-            System.out.println("Starting Consumers...");
-            for (Consumer consumer : this.configuration.getConsumers()) {
-                consumer.setStatus(Status.DELAYED);
-                scheduler.schedule(() -> {
-                    consumer.setStatus(Status.RUNNING);
-                    consumer.getThread().start();
-                    System.out.println("Consumer " + consumer.getId() + " started.");
-                }, consumer.getStartDelay(), TimeUnit.MILLISECONDS);
-            }
+        for (Consumer consumer : this.configuration.getConsumers()) {
+            consumer.setStatus(Status.DELAYED);
+            scheduler.schedule(() -> {
+                consumer.setStatus(Status.RUNNING);
+                consumer.getThread().start();
+            }, consumer.getStartDelay(), TimeUnit.MILLISECONDS);
+        }
 
-            System.out.println("Starting Producers...");
-            for (Producer producer : this.configuration.getProducers()) {
-                producer.setStatus(Status.DELAYED);
-                scheduler.schedule(() -> {
-                    producer.setStatus(Status.RUNNING);
-                    producer.getThread().start();
-                    System.out.println("Producer " + producer.getId() + " started.");
-                }, producer.getStartDelay(), TimeUnit.MILLISECONDS);
-            }
+        for (Producer producer : this.configuration.getProducers()) {
+            producer.setStatus(Status.DELAYED);
+            scheduler.schedule(() -> {
+                producer.setStatus(Status.RUNNING);
+                producer.getThread().start();
+            }, producer.getStartDelay(), TimeUnit.MILLISECONDS);
         }
     }
-
-
 
     public void stop() throws InterruptedException {
         for (Consumer consumer : this.configuration.getConsumers()) {

@@ -1,4 +1,4 @@
-package org.fbmoll.threadlabs;
+package org.fbmoll.threadlabs.components;
 
 import lombok.AccessLevel;
 import lombok.Getter;

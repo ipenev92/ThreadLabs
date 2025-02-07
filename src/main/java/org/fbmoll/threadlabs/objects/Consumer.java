@@ -1,19 +1,20 @@
-package org.fbmoll.threadlabs;
+package org.fbmoll.threadlabs.objects;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.fbmoll.threadlabs.utils.Status;
 
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Consumer implements Runnable {
     final Model model;
-    Status status;
     final String id;
     final ResourceType resourceType;
     final Thread thread;
+    Status status;
     int quantityConsumed;
     int startDelay;
     int consumeDelay;
@@ -30,40 +31,39 @@ public class Consumer implements Runnable {
     }
 
     private void consume() {
-        synchronized (resourceType) {
-            while (this.resourceType.getQuantity() == 0) {
-                try {
-                    this.status = Status.IDLE; // 🔄 Set consumer to IDLE when waiting
-                    System.out.println(id + " is IDLE (waiting for resources). Total consumed: " + this.quantityConsumed);
-
-                    // ✅ Attempt to trigger underflow
-                    this.resourceType.removeResource();
-
-                    resourceType.wait(); // WAIT for producer to produce resources
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
+        if (model.getConfiguration().isUseSynchronized()) {
+            synchronized (resourceType) {
+                while (this.resourceType.getQuantity() == 0) {
+                    try {
+                        this.status = Status.IDLE;
+                        this.resourceType.removeResource();
+                        resourceType.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 }
+
+                this.status = Status.RUNNING;
+                this.resourceType.removeResource();
+                this.quantityConsumed++;
+                resourceType.notifyAll();
+            }
+        } else {
+            while (this.resourceType.getQuantity() == 0) {
+                this.status = Status.IDLE;
+                this.resourceType.removeResource();
             }
 
-            // ✅ Always check after being notified
-            this.status = Status.RUNNING; // 🔄 Set back to RUNNING
+            this.status = Status.RUNNING;
             this.resourceType.removeResource();
             this.quantityConsumed++;
-            System.out.println(id + " CONSUMED 1 resource. Total consumed: " + this.quantityConsumed);
-
-            resourceType.notifyAll(); // Wake up waiting producers
         }
     }
-
-
-
-
 
     @Override
     public void run() {
         try {
-            System.out.println(id + " Consumer sleeping for startDelay: " + startDelay);
             Thread.sleep(startDelay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -71,7 +71,6 @@ public class Consumer implements Runnable {
         }
 
         this.status = Status.RUNNING;
-        System.out.println(id + " Consumer STARTED.");
 
         while (this.status == Status.RUNNING) {
             this.consume();
@@ -84,8 +83,5 @@ public class Consumer implements Runnable {
         }
 
         this.status = Status.ENDED;
-        System.out.println(id + " Consumer ENDED.");
     }
-
-
 }
