@@ -13,12 +13,15 @@ public class ResourceType {
     final int minQuantity;
     int overflow;
     int underflow;
+    final Object lock = new Object();
+    final boolean useSynchronized;
 
-    public ResourceType(String id, int min, int max, boolean useLimits) {
+    public ResourceType(String id, int min, int max, boolean useSynchronized, boolean useLimits) {
         this.id = id;
         this.quantity = min;
         this.overflow = 0;
         this.underflow = 0;
+        this.useSynchronized = useSynchronized;
 
         if (useLimits) {
             this.minQuantity = min;
@@ -28,20 +31,41 @@ public class ResourceType {
             this.maxQuantity = Integer.MAX_VALUE;
         }
     }
-
     public void addResource() {
-        if (quantity < maxQuantity) {
-            this.quantity++;
+        if (useSynchronized) {
+            synchronized (lock) {
+                if (quantity < maxQuantity) {
+                    this.quantity++;
+                    lock.notifyAll();
+                } else {
+                    overflow++;
+                }
+            }
         } else {
-            overflow++;
+            if (quantity < maxQuantity) {
+                this.quantity++;
+            } else {
+                overflow++;
+            }
         }
     }
 
     public void removeResource() {
-        if (quantity > minQuantity) {
-            this.quantity--;
+        if (useSynchronized) {
+            synchronized (lock) {
+                if (quantity > minQuantity) {
+                    this.quantity--;
+                    lock.notifyAll();
+                } else {
+                    underflow++;
+                }
+            }
         } else {
-            underflow++;
+            if (quantity > minQuantity) {
+                this.quantity--;
+            } else {
+                underflow++;
+            }
         }
     }
 }

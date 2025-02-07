@@ -31,34 +31,14 @@ public class Consumer implements Runnable {
     }
 
     private void consume() {
-        if (model.getConfiguration().isUseSynchronized()) {
-            synchronized (resourceType) {
-                while (this.resourceType.getQuantity() == 0) {
-                    try {
-                        this.status = Status.IDLE;
-                        this.resourceType.removeResource();
-                        resourceType.wait();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-
-                this.status = Status.RUNNING;
-                this.resourceType.removeResource();
-                this.quantityConsumed++;
-                resourceType.notifyAll();
-            }
-        } else {
-            while (this.resourceType.getQuantity() == 0) {
-                this.status = Status.IDLE;
-                this.resourceType.removeResource();
-            }
-
-            this.status = Status.RUNNING;
+        while (this.resourceType.getQuantity() == 0) {
+            this.status = Status.IDLE;
             this.resourceType.removeResource();
-            this.quantityConsumed++;
         }
+
+        this.status = Status.RUNNING;
+        this.resourceType.removeResource();
+        this.quantityConsumed++;
     }
 
     @Override

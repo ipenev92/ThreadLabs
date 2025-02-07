@@ -31,34 +31,14 @@ public class Producer implements Runnable {
     }
 
     private void produce() {
-        if (model.getConfiguration().isUseSynchronized()) {
-            synchronized (resourceType) {
-                while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
-                    try {
-                        this.status = Status.IDLE;
-                        this.resourceType.addResource();
-                        resourceType.wait();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-
-                this.status = Status.RUNNING;
-                this.resourceType.addResource();
-                this.quantityProduced++;
-                resourceType.notifyAll();
-            }
-        } else {
-            while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
-                this.status = Status.IDLE;
-                this.resourceType.addResource();
-            }
-
-            this.status = Status.RUNNING;
+        while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
+            this.status = Status.IDLE;
             this.resourceType.addResource();
-            this.quantityProduced++;
         }
+
+        this.status = Status.RUNNING;
+        this.resourceType.addResource();
+        this.quantityProduced++;
     }
 
 

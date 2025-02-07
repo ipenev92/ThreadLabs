@@ -57,7 +57,7 @@ public class ConfigurationDTO {
     private void createResources() {
         for (int i = 1; i <= this.resourceTypeDTO.resourceTypesCount(); i++) {
             this.resourceTypes.add(new ResourceType("R" + i, this.resourceTypeDTO.resourcesMin(),
-                    this.resourceTypeDTO.resourcesMax(), this.useLimits));
+                    this.resourceTypeDTO.resourcesMax(), this.useSynchronized, this.useLimits));
         }
     }
 
