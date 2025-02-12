@@ -1,10 +1,12 @@
-package org.fbmoll.threadlabs.objects;
+package org.fbmoll.threadlabs.components;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.fbmoll.threadlabs.dto.ConfigurationDTO;
+import org.fbmoll.threadlabs.objects.Consumer;
+import org.fbmoll.threadlabs.objects.Producer;
 import org.fbmoll.threadlabs.utils.Status;
 
 import java.util.Random;
@@ -65,8 +67,6 @@ public class Model {
             }
         }
 
-        scheduler.shutdownNow();
         this.controller.getView().getViewThread().interrupt();
-        this.controller.getView().getViewThread().join();
     }
 }

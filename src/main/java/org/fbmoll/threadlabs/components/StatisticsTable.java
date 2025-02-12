@@ -2,22 +2,27 @@ package org.fbmoll.threadlabs.components;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.fbmoll.threadlabs.dto.ConfigurationDTO;
-import org.fbmoll.threadlabs.objects.Controller;
+import org.fbmoll.threadlabs.objects.Consumer;
+import org.fbmoll.threadlabs.objects.Producer;
 import org.fbmoll.threadlabs.objects.ResourceType;
+import org.fbmoll.threadlabs.utils.Status;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.ArrayList;
 
 @Getter
+@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class StatisticsTable {
     final Controller controller;
-    final ConfigurationDTO configuration;
+    ConfigurationDTO configuration;
     final JTable table;
 
     public StatisticsTable(Controller controller, ConfigurationDTO configuration) {
@@ -33,8 +38,9 @@ public class StatisticsTable {
                 {"Total Producers", "0"},
                 {"Total Consumers", "0"},
                 {"Total Resource Quantity", "0"},
-                {"Active Threads", "0"},
-                {"Idle Threads", "0"}
+                {"Running Threads", "0"},
+                {"Idle Threads", "0"},
+                {"Ended Threads", "0"}
         };
 
         DefaultTableModel model = new DefaultTableModel(data, columnNames);
@@ -74,13 +80,16 @@ public class StatisticsTable {
         SwingUtilities.invokeLater(() -> {
             DefaultTableModel model = (DefaultTableModel) this.table.getModel();
 
-            model.setValueAt(configuration.getResourceTypes().stream()
-                    .mapToInt(ResourceType::getQuantity).sum(), 0, 1);
-            model.setValueAt(configuration.getProducerDTO().producerCount(), 1, 1);
-            model.setValueAt(configuration.getConsumerDTO().consumerCount(), 2, 1);
+            model.setValueAt(this.configuration.getResourceTypeDTO().getResourceTypesCount(), 0, 1);
+            model.setValueAt(this.configuration.getProducerDTO().getProducerCount(), 1, 1);
+            model.setValueAt(this.configuration.getConsumerDTO().getConsumerCount(), 2, 1);
             model.setValueAt(getTotalResources(), 3, 1);
-            model.setValueAt(getActiveThreadsCount(), 4, 1);
-            model.setValueAt(getIdleThreadsCount(), 5, 1);
+            model.setValueAt(getThreadCount(Status.RUNNING, this.configuration.getProducers(),
+                    this.configuration.getConsumers()), 4, 1);
+            model.setValueAt(getThreadCount(Status.IDLE, this.configuration.getProducers(),
+                    this.configuration.getConsumers()), 5, 1);
+            model.setValueAt(getThreadCount(Status.ENDED, this.configuration.getProducers(),
+                    this.configuration.getConsumers()), 6, 1);
         });
     }
 
@@ -93,15 +102,21 @@ public class StatisticsTable {
         return resources;
     }
 
-    private int getActiveThreadsCount() {
-        return (int) Thread.getAllStackTraces().keySet().stream()
-                .filter(Thread::isAlive)
-                .count();
-    }
+    private int getThreadCount(Status status, ArrayList<Producer> producers, ArrayList<Consumer> consumers) {
+        int count = 0;
 
-    private int getIdleThreadsCount() {
-        return (int) Thread.getAllStackTraces().keySet().stream()
-                .filter(t -> t.getState() == Thread.State.WAITING)
-                .count();
+        for (Producer producer : producers) {
+            if (producer.getStatus() == status) {
+                count++;
+            }
+        }
+
+        for (Consumer consumer : consumers) {
+            if (consumer.getStatus() == status) {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

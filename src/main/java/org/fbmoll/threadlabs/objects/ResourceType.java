@@ -31,40 +31,47 @@ public class ResourceType {
             this.maxQuantity = Integer.MAX_VALUE;
         }
     }
+
     public void addResource() {
-        if (useSynchronized) {
-            synchronized (lock) {
-                if (quantity < maxQuantity) {
-                    this.quantity++;
-                    lock.notifyAll();
-                } else {
-                    overflow++;
+        if (this.useSynchronized) {
+            synchronized (this.lock) {
+                while (this.quantity == this.maxQuantity) {
+                    try {
+                        this.lock.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                this.quantity++;
+                this.lock.notifyAll();
             }
         } else {
-            if (quantity < maxQuantity) {
+            if (this.quantity < this.maxQuantity) {
                 this.quantity++;
             } else {
-                overflow++;
+                this.overflow++;
             }
         }
     }
 
     public void removeResource() {
-        if (useSynchronized) {
-            synchronized (lock) {
-                if (quantity > minQuantity) {
-                    this.quantity--;
-                    lock.notifyAll();
-                } else {
-                    underflow++;
+        if (this.useSynchronized) {
+            synchronized (this.lock) {
+                while (this.quantity == this.minQuantity) {
+                    try {
+                        this.lock.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                this.quantity--;
+                this.lock.notifyAll();
             }
         } else {
-            if (quantity > minQuantity) {
+            if (this.quantity > this.minQuantity) {
                 this.quantity--;
             } else {
-                underflow++;
+                this.underflow++;
             }
         }
     }

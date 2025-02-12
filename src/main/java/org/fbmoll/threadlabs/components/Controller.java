@@ -1,10 +1,9 @@
-package org.fbmoll.threadlabs.objects;
+package org.fbmoll.threadlabs.components;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import org.fbmoll.threadlabs.dto.ConfigurationDTO;
-import org.fbmoll.threadlabs.utils.View;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)

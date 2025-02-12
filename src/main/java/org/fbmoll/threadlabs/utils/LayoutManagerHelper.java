@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 import org.fbmoll.threadlabs.components.ConfigurationTable;
 import org.fbmoll.threadlabs.components.ControlPanel;
 import org.fbmoll.threadlabs.components.StatisticsTable;
+import org.fbmoll.threadlabs.components.View;
 import org.fbmoll.threadlabs.dto.ConfigurationDTO;
 import org.fbmoll.threadlabs.objects.Consumer;
 import org.fbmoll.threadlabs.objects.Producer;
@@ -39,7 +40,7 @@ public class LayoutManagerHelper {
         this.configuration = ConfigurationDTO.empty();
 
         this.configurationTable = new ConfigurationTable(view.getController());
-        this.statisticsTable = new StatisticsTable(view.getController(), configuration);
+        this.statisticsTable = new StatisticsTable(view.getController(), this.configuration);
         this.consumerTable = createTable("Consumer Data");
         this.producerTable = createTable("Producer Data");
         this.resourcesTable = createTable("Resources Data");
@@ -157,7 +158,8 @@ public class LayoutManagerHelper {
         String[] columnNames;
         if (Objects.equals(title, "Resources Data")) {
             columnNames = new String[]{
-                    "Resource ID", "Quantity", "Min Qtty", "Max Qtty", "Consumers", "Producers", "Overflow", "Underflow"
+                    "Resource ID", "Quantity", "Min Qtty", "Max Qtty", "Consumers", "Producers", "Overflow",
+                    "Underflow", "Status"
             };
         } else if (Objects.equals(title, "Producer Data")) {
             columnNames = new String[]{
@@ -202,6 +204,8 @@ public class LayoutManagerHelper {
             updateConsumer();
             updateProducer();
             updateResource();
+
+            this.getStatisticsTable().updateStatistics();
         });
     }
 
@@ -244,9 +248,12 @@ public class LayoutManagerHelper {
         for (ResourceType resource : this.configuration.getResourceTypes()) {
             if (!addedResource.contains(resource.getId())) {
                 model.addRow(new Object[]{
-                        resource.getId(), resource.getQuantity(), resource.getMinQuantity(),
-                        resource.getMaxQuantity(), countConsumers(resource), countProducers(resource),
-                        resource.getOverflow(), resource.getUnderflow()
+                        resource.getId(), resource.getQuantity(),
+                        this.configuration.getRunConfigurationDTO().isUseLimits() ? resource.getMinQuantity() : "-",
+                        this.configuration.getRunConfigurationDTO().isUseLimits() ? resource.getMaxQuantity() : "-",
+                        countConsumers(resource), countProducers(resource),
+                        resource.getOverflow(), resource.getUnderflow(),
+                        (resource.getOverflow() > 0 || resource.getUnderflow() > 0) ? Status.BAD : Status.GOOD
                 });
                 addedResource.add(resource.getId());
             }

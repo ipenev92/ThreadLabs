@@ -5,5 +5,7 @@ public enum Status {
     RUNNING,
     ENDED,
     INTERRUPTED,
-    IDLE
+    IDLE,
+    GOOD,
+    BAD
 }

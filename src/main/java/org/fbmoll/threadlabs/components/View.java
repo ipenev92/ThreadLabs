@@ -1,17 +1,11 @@
-package org.fbmoll.threadlabs.utils;
+package org.fbmoll.threadlabs.components;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
-import org.fbmoll.threadlabs.objects.Controller;
-import org.fbmoll.threadlabs.components.ConfigurationTable;
-import org.fbmoll.threadlabs.components.ControlPanel;
-import org.fbmoll.threadlabs.components.DataPanel;
-import org.fbmoll.threadlabs.dto.ConfigurationDTO;
-import org.fbmoll.threadlabs.dto.ConsumerDTO;
-import org.fbmoll.threadlabs.dto.ProducerDTO;
-import org.fbmoll.threadlabs.dto.ResourceTypeDTO;
+import org.fbmoll.threadlabs.dto.*;
+import org.fbmoll.threadlabs.utils.LayoutManagerHelper;
 
 import javax.swing.*;
 import javax.swing.table.TableModel;
@@ -59,30 +53,36 @@ public class View extends JFrame implements ActionListener {
 
             ConsumerDTO consumer = new ConsumerDTO(
                 Integer.parseInt(tableModel.getValueAt(5, 1).toString()),
-                Integer.parseInt(tableModel.getValueAt(11, 1).toString()),
-                Integer.parseInt(tableModel.getValueAt(12, 1).toString())
+                Integer.parseInt(tableModel.getValueAt(6, 1).toString()),
+                Integer.parseInt(tableModel.getValueAt(7, 1).toString())
             );
             ProducerDTO producer = new ProducerDTO(
-                    Integer.parseInt(tableModel.getValueAt(7, 1).toString()),
-                    Integer.parseInt(tableModel.getValueAt(13, 1).toString()),
-                    Integer.parseInt(tableModel.getValueAt(14, 1).toString())
+                    Integer.parseInt(tableModel.getValueAt(9, 1).toString()),
+                    Integer.parseInt(tableModel.getValueAt(10, 1).toString()),
+                    Integer.parseInt(tableModel.getValueAt(11, 1).toString())
             );
             ResourceTypeDTO resourceType = new ResourceTypeDTO(
                     Integer.parseInt(tableModel.getValueAt(1, 1).toString()),
                     Integer.parseInt(tableModel.getValueAt(2, 1).toString()),
-                    Integer.parseInt(tableModel.getValueAt(3, 1).toString()),
-                    Integer.parseInt(tableModel.getValueAt(9, 1).toString()),
-                    Integer.parseInt(tableModel.getValueAt(10, 1).toString())
+                    Integer.parseInt(tableModel.getValueAt(3, 1).toString())
+            );
+            RunConfigurationDTO runConfiguration = new RunConfigurationDTO(
+                    Integer.parseInt(tableModel.getValueAt(17, 1).toString()),
+                    Integer.parseInt(tableModel.getValueAt(18, 1).toString()),
+                    Integer.parseInt(tableModel.getValueAt(14, 1).toString()),
+                    Integer.parseInt(tableModel.getValueAt(15, 1).toString()),
+                    this.layoutManagerHelper.getConfigurationTable().getUseSynchronizedCheckBox().isSelected(),
+                    this.layoutManagerHelper.getConfigurationTable().getUseLimitsCheckBox().isSelected(),
+                    this.layoutManagerHelper.getConfigurationTable().getUseLifecycle().isSelected()
             );
             this.configuration = new ConfigurationDTO(
                     this.controller.getModel(),
-                    resourceType, consumer, producer,
-                    this.layoutManagerHelper.getConfigurationTable().getUseSynchronizedCheckBox().isSelected(),
-                    this.layoutManagerHelper.getConfigurationTable().getUseLimitsCheckBox().isSelected()
+                    resourceType, consumer, producer, runConfiguration
             );
             this.controller.play(this.configuration);
 
             this.layoutManagerHelper.setConfiguration(this.configuration);
+            this.layoutManagerHelper.getStatisticsTable().setConfiguration(this.configuration);
             this.layoutManagerHelper.updateTables();
             this.layoutManagerHelper.getStatisticsTable().updateStatistics();
             this.layoutManagerHelper.clearTables();
@@ -102,7 +102,7 @@ public class View extends JFrame implements ActionListener {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     SwingUtilities.invokeLater(this.layoutManagerHelper::updateTables);
-                    Thread.sleep(1000);
+                    Thread.sleep(333);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }

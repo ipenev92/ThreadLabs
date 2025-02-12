@@ -4,7 +4,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.fbmoll.threadlabs.components.Model;
 import org.fbmoll.threadlabs.utils.Status;
+
+import java.util.Random;
 
 @Getter
 @Setter
@@ -19,6 +22,7 @@ public class Consumer implements Runnable {
     int startDelay;
     int consumeDelay;
     int processingTime;
+    final Random random;
 
     public Consumer(Model model, String id, ResourceType resourceType, int startDelay, int consumeDelay) {
         this.model = model;
@@ -28,6 +32,7 @@ public class Consumer implements Runnable {
         this.quantityConsumed = 0;
         this.startDelay = startDelay;
         this.consumeDelay = consumeDelay;
+        this.random = new Random();
     }
 
     private void consume() {
@@ -35,7 +40,21 @@ public class Consumer implements Runnable {
             this.status = Status.IDLE;
             this.resourceType.removeResource();
         }
+        this.status = Status.RUNNING;
+        this.resourceType.removeResource();
+        this.quantityConsumed++;
+    }
 
+    private void consumeOne() {
+        while (this.resourceType.getQuantity() == 0) {
+            this.status = Status.IDLE;
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
         this.status = Status.RUNNING;
         this.resourceType.removeResource();
         this.quantityConsumed++;
@@ -52,16 +71,36 @@ public class Consumer implements Runnable {
 
         this.status = Status.RUNNING;
 
-        while (this.status == Status.RUNNING) {
-            this.consume();
-            try {
-                Thread.sleep(consumeDelay);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
+        if (this.model.getConfiguration().getRunConfigurationDTO().isUseLifeCycle()) {
+            int count = generateNumber(
+                    this.model.getConfiguration().getRunConfigurationDTO().getLifeCycleMin(),
+                    this.model.getConfiguration().getRunConfigurationDTO().getLifeCycleMax()
+            );
+            for (int i = 0; i < count && this.status == Status.RUNNING; i++) {
+                consumeOne();
+                try {
+                    Thread.sleep(this.consumeDelay);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        } else {
+             while (this.status == Status.RUNNING) {
+                consume();
+                try {
+                    Thread.sleep(this.consumeDelay);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
         }
 
         this.status = Status.ENDED;
+    }
+
+    private int generateNumber(int x, int y) {
+        return this.random.nextInt(y - x + 1) + x;
     }
 }

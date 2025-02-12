@@ -1,5 +1,15 @@
 package org.fbmoll.threadlabs.dto;
 
-public record ResourceTypeDTO(int resourceTypesCount, int resourcesMin, int resourcesMax,
-                              int startDelayMin, int startDelayMax) {
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.experimental.FieldDefaults;
+
+@AllArgsConstructor
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public final class ResourceTypeDTO {
+    private final int resourceTypesCount;
+    private final int resourcesMin;
+    private final int resourcesMax;
 }

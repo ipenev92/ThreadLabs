@@ -4,12 +4,12 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import org.fbmoll.threadlabs.utils.CheckBoxCellEditor;
-import org.fbmoll.threadlabs.objects.Controller;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
 @Getter
@@ -19,6 +19,7 @@ public class ConfigurationTable extends JTable {
     final JTable table;
     JCheckBox useSynchronizedCheckBox;
     JCheckBox useLimitsCheckBox;
+    JCheckBox useLifecycle;
 
     public ConfigurationTable(Controller controller) {
         this.controller = controller;
@@ -28,10 +29,12 @@ public class ConfigurationTable extends JTable {
     private JTable createConfigurationTable() {
         String[] columnNames = {"Parameter", "Value"};
 
-        useSynchronizedCheckBox = new JCheckBox();
-        useSynchronizedCheckBox.setSelected(true);
-        useLimitsCheckBox = new JCheckBox();
-        useLimitsCheckBox.setSelected(true);
+        this.useSynchronizedCheckBox = new JCheckBox();
+        this.useSynchronizedCheckBox.setSelected(true);
+        this.useLimitsCheckBox = new JCheckBox();
+        this.useLimitsCheckBox.setSelected(true);
+        this.useLifecycle = new JCheckBox();
+        this.useLifecycle.setSelected(false);
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
@@ -56,20 +59,24 @@ public class ConfigurationTable extends JTable {
 
                 {"**Consumer Settings**", ""},
                 {"Consumers", "2"},
+                {"Min Consumer Delay (s)", "1"},
+                {"Max Consumer Delay (s)", "15"},
 
                 {"**Producer Settings**", ""},
                 {"Producers", "15"},
-
-                {"**Delays**", ""},
-                {"Min Start Delay (s)", "106"},
-                {"Max Start Delay (s)", "365"},
-                {"Min Consumer Delay (s)", "1"},
-                {"Max Consumer Delay (s)", "15"},
                 {"Min Producer Delay (s)", "1"},
                 {"Max Producer Delay (s)", "15"},
 
-                {"Utilize Synchronized", useSynchronizedCheckBox},
-                {"Utilize Min and Max Resources", useLimitsCheckBox}
+                {"**Producer/Consumer Lifecycle**", ""},
+                {"Lifecycle Enabled", this.useLifecycle},
+                {"Lifecycle Min Count", "10000"},
+                {"Lifecycle Max Count", "10000"},
+
+                {"**Extra Configuration**", ""},
+                {"Min Start Delay (s)", "106"},
+                {"Max Start Delay (s)", "365"},
+                {"Synchronize", this.useSynchronizedCheckBox},
+                {"Stock Control", this.useLimitsCheckBox}
         };
 
         DefaultTableModel model = new DefaultTableModel(data, columnNames) {
@@ -79,10 +86,7 @@ public class ConfigurationTable extends JTable {
                     return false;
                 }
                 Object headerValue = getValueAt(row, 0);
-                if (headerValue instanceof String && ((String) headerValue).contains("**")) {
-                    return false;
-                }
-                return true;
+                return !(headerValue instanceof String) || !((String) headerValue).contains("**");
             }
         };
 
@@ -99,7 +103,21 @@ public class ConfigurationTable extends JTable {
                 }
                 return super.getCellEditor(row, column);
             }
+
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component comp = super.prepareRenderer(renderer, row, column);
+                if (!isRowSelected(row)) {
+                    if (row == 0 || row == 4 || row == 8 || row == 12 || row == 16) {
+                        comp.setBackground(new Color(173, 216, 230)); // light blue
+                    } else {
+                        comp.setBackground(getBackground());
+                    }
+                }
+                return comp;
+            }
         };
+
         tb.setPreferredScrollableViewportSize(new Dimension(300, 200));
         return tb;
     }
@@ -123,9 +141,20 @@ public class ConfigurationTable extends JTable {
                 }
 
                 Component comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (comp instanceof JLabel jlabel) {
-                    jlabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+                // If the value is a String and contains "**", set a light blue background.
+                if (value instanceof String && ((String) value).contains("**")) {
+                    comp.setBackground(new Color(173, 216, 230)); // light blue
+                } else {
+                    // Reset the background based on selection state
+                    comp.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
                 }
+
+                // Center the text if the component is a JLabel
+                if (comp instanceof JLabel) {
+                    ((JLabel) comp).setHorizontalAlignment(SwingConstants.CENTER);
+                }
+
                 return comp;
             }
         };

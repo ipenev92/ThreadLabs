@@ -8,7 +8,6 @@ import org.fbmoll.threadlabs.objects.Consumer;
 import org.fbmoll.threadlabs.objects.Producer;
 import org.fbmoll.threadlabs.objects.ResourceType;
 import org.fbmoll.threadlabs.utils.Status;
-import org.fbmoll.threadlabs.utils.View;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
