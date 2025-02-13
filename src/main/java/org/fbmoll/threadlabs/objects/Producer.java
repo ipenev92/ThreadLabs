@@ -35,26 +35,26 @@ public class Producer implements Runnable {
         this.random = new Random();
     }
 
-    // Original method used in continuous mode.
-    // (Note: it may call addResource() more than once if the resource is at its boundary.)
+    // Modified method: added a short delay inside the busy loop to reduce rapid overflow increments.
     private void produce() {
         while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
             this.status = Status.IDLE;
-            this.resourceType.addResource();
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
         this.status = Status.RUNNING;
         this.resourceType.addResource();
         this.quantityProduced++;
     }
 
-    // One-shot production method for lifecycle mode.
-    // This version still checks the condition and waits if needed but performs only one add.
     private void produceOne() {
-        // Busy-wait until there is room to add a resource
         while (this.resourceType.getQuantity() >= this.resourceType.getMaxQuantity()) {
             this.status = Status.IDLE;
             try {
-                // Sleep briefly to avoid a tight busy loop
                 Thread.sleep(1);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

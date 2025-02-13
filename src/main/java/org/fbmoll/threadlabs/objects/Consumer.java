@@ -35,10 +35,16 @@ public class Consumer implements Runnable {
         this.random = new Random();
     }
 
+    // Modified method: added a short delay inside the busy loop to reduce rapid underflow increments.
     private void consume() {
         while (this.resourceType.getQuantity() == 0) {
             this.status = Status.IDLE;
-            this.resourceType.removeResource();
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
         this.status = Status.RUNNING;
         this.resourceType.removeResource();
@@ -86,7 +92,7 @@ public class Consumer implements Runnable {
                 }
             }
         } else {
-             while (this.status == Status.RUNNING) {
+            while (this.status == Status.RUNNING) {
                 consume();
                 try {
                     Thread.sleep(this.consumeDelay);
